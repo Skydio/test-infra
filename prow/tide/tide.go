@@ -955,9 +955,9 @@ func (c *Controller) pickBatch(sp subpool, cc map[int]contextChecker) ([]PullReq
 
 	var candidates []PullRequest
 	for _, pr := range sp.prs {
-		if isPassingTests(sp.log, c.ghc, pr, cc[int(pr.Number)]) {
-			candidates = append(candidates, pr)
-		}
+		//if isPassingTests(sp.log, c.ghc, pr, cc[int(pr.Number)]) {
+		candidates = append(candidates, pr)
+		//}
 	}
 
 	if len(candidates) == 0 {
