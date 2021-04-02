@@ -123,6 +123,7 @@ type Pool struct {
 	Org    string
 	Repo   string
 	Branch string
+	Suffix string
 
 	// PRs with passing tests, pending tests, and missing or failed tests.
 	// Note that these results are rolled up. If all tests for a PR are passing
@@ -536,7 +537,7 @@ func (c *Controller) filterSubpools(mergeAllowed func(*PullRequest) (string, err
 				sp.log.WithError(err).Error("Error initializing subpool.")
 				return
 			}
-			key := poolKey(sp.org, sp.repo, sp.branch)
+			key := poolKey(sp.org, sp.repo, sp.branch, sp.suffix)
 			if spFiltered := filterSubpool(c.ghc, mergeAllowed, sp); spFiltered != nil {
 				sp.log.WithField("key", key).WithField("pool", spFiltered).Debug("filtered sub-pool")
 
@@ -1589,7 +1590,7 @@ func (c *Controller) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, e
 		}
 		if recordableActions[act] {
 			c.History.Record(
-				poolKey(sp.org, sp.repo, sp.branch),
+				poolKey(sp.org, sp.repo, sp.branch, sp.suffix),
 				string(act),
 				sp.sha,
 				errorString,
@@ -1663,6 +1664,7 @@ type subpool struct {
 	org    string
 	repo   string
 	branch string
+	suffix string // custom suffix
 	// sha is the baseSHA for this subpool
 	sha string
 
@@ -1677,8 +1679,8 @@ type subpool struct {
 	presubmits map[int][]config.Presubmit
 }
 
-func poolKey(org, repo, branch string) string {
-	return fmt.Sprintf("%s/%s:%s", org, repo, branch)
+func poolKey(org, repo, branch, suffix string) string {
+	return fmt.Sprintf("%s/%s:%s%s", org, repo, branch, suffix)
 }
 
 // dividePool splits up the list of pull requests and prow jobs into a group
@@ -1690,11 +1692,11 @@ func (c *Controller) dividePool(pool map[string]PullRequest) (map[string]*subpoo
 		repo := string(pr.Repository.Name)
 		branch := string(pr.BaseRef.Name)
 
-		slowBranch := fmt.Sprintf("slow_%s", string(pr.BaseRef.Name))
-		slowBranchRef := string(pr.BaseRef.Prefix) + slowBranch
-		fn := poolKey(org, repo, branch)
+		branchRef := string(pr.BaseRef.Prefix) + string(pr.BaseRef.Name)
+		fn := poolKey(org, repo, branch, "")
+
 		if sps[fn] == nil {
-			sha, err := c.ghc.GetRef(org, repo, strings.TrimPrefix(slowBranchRef, "refs/"))
+			sha, err := c.ghc.GetRef(org, repo, strings.TrimPrefix(branchRef, "refs/"))
 			if err != nil {
 				return nil, err
 			}
@@ -1712,6 +1714,33 @@ func (c *Controller) dividePool(pool map[string]PullRequest) (map[string]*subpoo
 			}
 		}
 		sps[fn].prs = append(sps[fn].prs, pr)
+
+		// Custom slow subpool with suffix _slow in the poolKey
+		slowBranch := fmt.Sprintf("slow_%s", string(pr.BaseRef.Name))
+		slowBranchRef := string(pr.BaseRef.Prefix) + slowBranch
+		slowFn := poolKey(org, repo, branch, "_slow")
+
+		if sps[slowFn] == nil {
+			sha, err := c.ghc.GetRef(org, repo, strings.TrimPrefix(slowBranchRef, "refs/"))
+			if err != nil {
+				return nil, err
+			}
+			sps[slowFn] = &subpool{
+				log: c.logger.WithFields(logrus.Fields{
+					"org":      org,
+					"repo":     repo,
+					"branch":   branch,
+					"suffix":   "_slow",
+					"base-sha": sha,
+				}),
+				org:    org,
+				repo:   repo,
+				branch: branch,
+				suffix: "_slow",
+				sha:    sha,
+			}
+		}
+		sps[slowFn].prs = append(sps[slowFn].prs, pr)
 	}
 
 	for subpoolkey, sp := range sps {

@@ -361,7 +361,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 		branch := string(pr.BaseRef.Name)
 		headSHA := string(pr.HeadRefOID)
 		// baseSHA is an empty string for any PR that doesn't have a corresponding merge pool
-		baseSHA := baseSHAs[poolKey(org, repo, branch)]
+		baseSHA := baseSHAs[poolKey(org, repo, branch, "")]
 		baseSHAGetter := newBaseSHAGetter(baseSHAs, sc.ghc, org, repo, branch)
 
 		cr := contextCheckerGetterFactory(c, sc.gc, org, repo, branch, baseSHAGetter, headSHA, requiredContexts[prKey(pr)])
@@ -588,15 +588,15 @@ func (sc *statusController) search() []PullRequest {
 // and if it did so, store in in the baseSHA map
 func newBaseSHAGetter(baseSHAs map[string]string, ghc githubClient, org, repo, branch string) config.RefGetter {
 	return func() (string, error) {
-		if sha, exists := baseSHAs[poolKey(org, repo, branch)]; exists {
+		if sha, exists := baseSHAs[poolKey(org, repo, branch, "")]; exists {
 			return sha, nil
 		}
 		baseSHA, err := ghc.GetRef(org, repo, "heads/"+branch)
 		if err != nil {
 			return "", err
 		}
-		baseSHAs[poolKey(org, repo, branch)] = baseSHA
-		return baseSHAs[poolKey(org, repo, branch)], nil
+		baseSHAs[poolKey(org, repo, branch, "")] = baseSHA
+		return baseSHAs[poolKey(org, repo, branch, "")], nil
 	}
 }
 

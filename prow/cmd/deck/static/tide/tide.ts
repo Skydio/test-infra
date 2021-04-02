@@ -242,6 +242,7 @@ function createRepoCell(pool: TidePool): HTMLTableDataCellElement {
     linksTD.appendChild(createLink(deckLink, `${pool.Org}/${pool.Repo}`));
     linksTD.appendChild(document.createTextNode(" "));
     linksTD.appendChild(createLink(branchLink, pool.Branch));
+    linksTD.appendChild(document.createTextNode(pool.Suffix));
     return linksTD;
 }
 

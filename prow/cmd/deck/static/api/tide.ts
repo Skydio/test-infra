@@ -43,6 +43,7 @@ export interface TidePool {
   Org: string;
   Repo: string;
   Branch: string;
+  Suffix: string;
 
   SuccessPRs: PullRequest[];
   PendingPRs: PullRequest[];
