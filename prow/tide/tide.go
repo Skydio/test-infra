@@ -1689,10 +1689,12 @@ func (c *Controller) dividePool(pool map[string]PullRequest) (map[string]*subpoo
 		org := string(pr.Repository.Owner.Login)
 		repo := string(pr.Repository.Name)
 		branch := string(pr.BaseRef.Name)
-		branchRef := string(pr.BaseRef.Prefix) + string(pr.BaseRef.Name)
+
+		slowBranch := fmt.Sprintf("slow_%s", string(pr.BaseRef.Name))
+		slowBranchRef := string(pr.BaseRef.Prefix) + slowBranch
 		fn := poolKey(org, repo, branch)
 		if sps[fn] == nil {
-			sha, err := c.ghc.GetRef(org, repo, strings.TrimPrefix(branchRef, "refs/"))
+			sha, err := c.ghc.GetRef(org, repo, strings.TrimPrefix(slowBranchRef, "refs/"))
 			if err != nil {
 				return nil, err
 			}
