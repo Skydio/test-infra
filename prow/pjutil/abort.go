@@ -61,7 +61,7 @@ func digestRefs(ref prowapi.Refs) string {
 func TerminateOlderJobs(pjc patchClient, log *logrus.Entry, pjs []prowapi.ProwJob) error {
 	dupes := map[string]int{}
 	for i, pj := range pjs {
-		if pj.Complete() || pj.Spec.Type != prowapi.PresubmitJob {
+		if pj.Complete() || (pj.Spec.Type == prowapi.PresubmitJob || (pj.Spec.InvalidBatch && pj.Spec.Type == prowapi.BatchJob)) {
 			continue
 		}
 

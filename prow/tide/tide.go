@@ -867,18 +867,19 @@ func (c *Controller) accumulateBatch(sp subpool) (successBatch []PullRequest, pe
 					state.prs = append(state.prs, pr)
 				} else if !ok {
 					state.validPulls = false
-					sp.log.WithField("batch", ref).WithFields(pr.logFields()).Debug("batch job invalid, PR left pool")
+					sp.log.WithField("batch", ref).WithFields(pr.logFields()).Debug("batch job invalid, PR left pool, aborting any pending presubmits")
 					break
 				} else {
 					state.validPulls = false
-					sp.log.WithField("batch", ref).WithFields(pr.logFields()).Debug("batch job invalid, PR HEAD changed")
+					sp.log.WithField("batch", ref).WithFields(pr.logFields()).Debug("batch job invalid, PR HEAD changed, aborting any pending presubmits")
 					break
 				}
 			}
 			states[ref] = state
 		}
 		if !states[ref].validPulls {
-			// The batch contains a PR ref that has changed. Skip it.
+			// The batch contains a PR ref that has changed. Skip it and set state to abort.
+			pj.Spec.InvalidBatch = true
 			continue
 		}
 

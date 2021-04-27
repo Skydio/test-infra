@@ -176,6 +176,10 @@ type ProwJobSpec struct {
 	// Presubmits and Postsubmits can also be set to hidden by
 	// adding their repository in Decks `hidden_repo` setting.
 	Hidden bool `json:"hidden,omitempty"`
+
+	// InvalidBatch corresponds to a batch picked by tide in the past that is no longer valid
+	// because of incorrect PR HEAD or PR has left the pool
+	InvalidBatch bool `json:"invalid_batch,omitempty"`
 }
 
 type GitHubTeamSlug struct {
